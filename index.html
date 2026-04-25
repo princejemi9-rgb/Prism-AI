@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Prism AI</title>
+
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <link rel="stylesheet" href="style.css"/>
+</head>
+
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="logo">✨ Prism AI</div>
+  <p>Watch. Learn. Earn.</p>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">Prism AI</div>
+    <button id="authBtn" onclick="login()" disabled>Login</button>
+  </div>
+
+  <!-- FEED -->
+  <div class="feed" id="feed"></div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottombar">
+    <div>🏠</div>
+    <div>🔥</div>
+    <div>💰</div>
+    <div>👤</div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
