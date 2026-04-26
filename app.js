@@ -18,30 +18,34 @@ function getPi() {
 // INIT PI (FIXED)
 // --------------------
 function initPi() {
-  const Pi = getPi();
+  const tryInit = () => {
+    const Pi = window.Pi;
 
-  if (!Pi) {
-    console.error("Pi SDK not loaded");
-    return;
-  }
+    if (!Pi) {
+      console.log("Waiting for Pi SDK...");
+      setTimeout(tryInit, 300); // keep checking
+      return;
+    }
 
-  try {
-    console.log("Initializing Pi SDK...");
+    try {
+      Pi.init({
+        version: "2.0",
+        sandbox: true
+      });
 
-    Pi.init({
-      version: "2.0",
-      sandbox: true
-    });
+      piReady = true;
 
-    piReady = true;
+      console.log("Pi SDK initialized correctly");
 
-    console.log("Pi SDK initialized successfully");
+      const authBtn = document.getElementById("authBtn");
+      if (authBtn) authBtn.disabled = false;
 
-    if (authBtn) authBtn.disabled = false;
+    } catch (err) {
+      console.error("Pi init error:", err);
+    }
+  };
 
-  } catch (err) {
-    console.error("Pi init error:", err);
-  }
+  tryInit();
 }
 
 // --------------------
