@@ -236,7 +236,3 @@ function observe(el) {
 // --------------------
 // SINGLE LOAD INIT (FIXED)
 // --------------------
-window.addEventListener("load", () => {
-  initPi();
-  initFeed();
-});
