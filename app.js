@@ -3,8 +3,7 @@
 // --------------------
 let piReady = false;
 let currentUser = null;
-
-const authBtn = document.getElementById("authBtn");
+
 const feed = document.getElementById("feed");
 
 // --------------------
