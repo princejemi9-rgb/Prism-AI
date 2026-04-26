@@ -64,6 +64,7 @@ async function login() {
   console.log("piReady:", piReady);
 
   const Pi = getPi();
+  const authBtn = document.getElementById("authBtn"); // ✅ ADD THIS
 
   if (!piReady || !Pi) {
     alert("Pi SDK not ready. Refresh and try again.");
@@ -73,15 +74,17 @@ async function login() {
   try {
     const auth = await Pi.authenticate(
       ['username', 'payments'],
-      { sandbox: true } // ✅ CRITICAL FIX
+      { sandbox: true }
     );
 
     currentUser = auth.user;
 
     alert("Welcome @" + auth.user.username);
 
-    authBtn.textContent = "Sign Out";
-    authBtn.onclick = signOut;
+    if (authBtn) {
+      authBtn.textContent = "Sign Out";
+      authBtn.onclick = signOut;
+    }
 
   } catch (err) {
     console.error("AUTH ERROR:", err);
@@ -93,9 +96,15 @@ async function login() {
 // SIGN OUT
 // --------------------
 function signOut() {
+  const authBtn = document.getElementById("authBtn"); // ✅ ADD THIS
+
   currentUser = null;
-  authBtn.textContent = "Login";
-  authBtn.onclick = login;
+
+  if (authBtn) {
+    authBtn.textContent = "Login";
+    authBtn.onclick = login;
+  }
+
   alert("Signed out");
 }
 
