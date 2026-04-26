@@ -4,7 +4,13 @@
 let piReady = false;
 let currentUser = null;
 
-const feed = document.getElementById("feed");
+let feed;
+
+window.addEventListener("load", () => {
+  feed = document.getElementById("feed"); // ✅ move here
+  initPi();
+  initFeed();
+});
 
 // --------------------
 // PI SDK ACCESS
