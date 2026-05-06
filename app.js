@@ -65,35 +65,26 @@ setTimeout(() => {
 // LOGIN (FIXED)
 // --------------------
 async function login() {
-  console.log("LOGIN CLICKED");
-  console.log("Pi object:", window.Pi);
-  console.log("piReady:", piReady);
+  const Pi = window.Pi;
 
-  const Pi = getPi();
-  const authBtn = document.getElementById("authBtn"); // ✅ ADD THIS
-
-  if (!piReady || !Pi) {
-    alert("Pi SDK not ready. Refresh and try again.");
+  if (!Pi) {
+    alert("Pi not available. Open inside Pi Browser App.");
     return;
   }
 
   try {
-    const auth = await Pi.authenticate(
-      ['username', 'payments'],
-      { sandbox: true }
-    );
+    // FORCE INIT AGAIN BEFORE AUTH
+    Pi.init({
+      version: "2.0",
+      sandbox: true
+    });
 
-    currentUser = auth.user;
+    const auth = await Pi.authenticate(['username', 'payments']);
 
     alert("Welcome @" + auth.user.username);
 
-    if (authBtn) {
-      authBtn.textContent = "Sign Out";
-      authBtn.onclick = signOut;
-    }
-
   } catch (err) {
-    console.error("AUTH ERROR:", err);
+    console.error(err);
     alert("Login failed: " + err.message);
   }
 }
