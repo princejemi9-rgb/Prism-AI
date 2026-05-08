@@ -45,13 +45,19 @@ window.addEventListener("load", async () => {
   // SPLASH REMOVE
   setTimeout(() => {
 
-    const splash = document.getElementById("splash");
+  const splash = document.getElementById("splash");
 
-    if (splash) {
+  if (splash) {
+
+    splash.style.opacity = "0";
+
+    setTimeout(() => {
       splash.style.display = "none";
-    }
+    }, 1000);
 
-  }, 2500);
+  }
+
+}, 5000);
 
   // INIT PI
   initPi();
