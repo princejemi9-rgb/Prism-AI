@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
   <title>Prism AI</title>
 
@@ -13,44 +19,65 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="style.css"/>
+
 </head>
 
 <body>
 
-<!-- SPLASH -->
-<div id="splash">
-  <div class="logo">✨ Prism AI</div>
-  <p>Watch. Learn. Earn.</p>
-</div>
+  <!-- SPLASH -->
+  <div id="splash">
 
-<!-- APP -->
-<div id="app">
+    <div class="logo">
+      ✨ Prism AI
+    </div>
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-
-    <div class="brand">Prism AI</div>
-
-    <button id="authBtn" onclick="login()">
-      Login
-    </button>
+    <p>
+      Watch. Learn. Earn.
+    </p>
 
   </div>
 
-  <!-- FEED -->
-  <div class="feed" id="feed"></div>
+  <!-- APP -->
+  <div id="app">
 
-  <!-- BOTTOM BAR -->
-  <div class="bottombar">
-    <div>🏠</div>
-    <div>🔥</div>
-    <div>💰</div>
-    <div>👤</div>
+    <!-- TOP BAR -->
+    <div class="topbar">
+
+      <div class="brand">
+        Prism AI
+      </div>
+
+      <button
+        id="authBtn"
+        onclick="login()"
+      >
+        Login
+      </button>
+
+    </div>
+
+    <!-- FEED -->
+    <div
+      class="feed"
+      id="feed"
+    ></div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottombar">
+
+      <div>🏠</div>
+
+      <div>🔥</div>
+
+      <div>💰</div>
+
+      <div>👤</div>
+
+    </div>
+
   </div>
 
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 
 </body>
 </html>
