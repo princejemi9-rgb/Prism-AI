@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Prism AI</title>
 
-  <!-- Pi SDK -->
+  <!-- PI SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <!-- SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <link rel="stylesheet" href="style.css"/>
 </head>
 
 <body>
 
-<!-- SPLASH SCREEN -->
+<!-- SPLASH -->
 <div id="splash">
   <div class="logo">✨ Prism AI</div>
   <p>Watch. Learn. Earn.</p>
@@ -24,17 +28,19 @@
 
   <!-- TOP BAR -->
   <div class="topbar">
+
     <div class="brand">Prism AI</div>
 
     <button id="authBtn" onclick="login()">
       Login
     </button>
+
   </div>
 
   <!-- FEED -->
   <div class="feed" id="feed"></div>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM BAR -->
   <div class="bottombar">
     <div>🏠</div>
     <div>🔥</div>
