@@ -4,6 +4,8 @@
 
 let currentUser = null;
 let feed;
+let videos = [];
+let index = 0;
 
 // --------------------
 // SUPABASE
@@ -22,39 +24,6 @@ const supabase =
   );
 
 // --------------------
-// VIDEO DATA
-// --------------------
-
-const videos = [
-  {
-    id: "1",
-    title:
-      "I share AI tools to help you work smarter and make money online 🔥",
-    creator: "prince_AI",
-    url:
-      "https://www.youtube.com/embed/sRcd9fK6ECw?enablejsapi=1&mute=1"
-  },
-  {
-    id: "2",
-    title:
-      "AI me real business 🔥",
-    creator: "prince_AI",
-    url:
-      "https://www.youtube.com/embed/tfkidUX4viA?enablejsapi=1&mute=1"
-  },
-  {
-    id: "3",
-    title:
-      "Would you hire a developer or let AI do it? 🔥",
-    creator: "prince_AI",
-    url:
-      "https://www.youtube.com/embed/HEYjc91mzAs?enablejsapi=1&mute=1"
-  }
-];
-
-let index = 0;
-
-// --------------------
 // APP START
 // --------------------
 
@@ -64,8 +33,6 @@ window.addEventListener(
 
     feed =
       document.getElementById("feed");
-
-    initFeed();
 
     // SPLASH
     setTimeout(() => {
@@ -88,7 +55,7 @@ window.addEventListener(
 
       }
 
-    }, 5000);
+    }, 3000);
 
     // PI INIT
     initPi();
@@ -98,6 +65,9 @@ window.addEventListener(
 
     // TEST DATABASE
     await testSupabase();
+
+    // LOAD POSTS
+    await loadPosts();
 
   }
 );
@@ -128,6 +98,70 @@ async function testSupabase() {
     );
 
   }
+
+}
+
+// --------------------
+// LOAD POSTS
+// --------------------
+
+async function loadPosts() {
+
+  const { data, error } =
+    await supabase
+      .from("posts")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+  if (error) {
+
+    console.error(
+      "Load Posts Error:",
+      error
+    );
+
+    return;
+
+  }
+
+  videos = data.map(post => ({
+
+    id: post.id,
+
+    title: post.title,
+
+    creator: post.creator,
+
+    url: post.video_url
+
+  }));
+
+  feed.innerHTML = "";
+
+  index = 0;
+
+  if (videos.length === 0) {
+
+    feed.innerHTML = `
+      <div style="
+        padding:40px;
+        text-align:center;
+        color:white;
+      ">
+        No posts yet
+      </div>
+    `;
+
+    return;
+
+  }
+
+  initFeed();
 
 }
 
@@ -180,8 +214,8 @@ async function autoLogin() {
     if (!window.Pi) return;
 
     const scopes = [
-      'username',
-      'payments'
+      "username",
+      "payments"
     ];
 
     function onIncompletePaymentFound(
@@ -236,8 +270,8 @@ async function login() {
     }
 
     const scopes = [
-      'username',
-      'payments'
+      "username",
+      "payments"
     ];
 
     function onIncompletePaymentFound(
@@ -380,7 +414,7 @@ function tip() {
     },
 
     onError:
-      function(error, payment) {
+      function(error) {
 
       console.error(error);
 
@@ -412,9 +446,13 @@ function render(video) {
 
     <div class="overlay">
 
-      <h1>${video.title}</h1>
+      <h1>
+        ${video.title}
+      </h1>
 
-      <p>@${video.creator}</p>
+      <p>
+        @${video.creator}
+      </p>
 
     </div>
 
@@ -440,6 +478,10 @@ function render(video) {
 
 function loadMore() {
 
+  if (
+    videos.length === 0
+  ) return;
+
   render(
     videos[
       index % videos.length
@@ -456,9 +498,15 @@ function loadMore() {
 
 function initFeed() {
 
+  const count =
+    Math.min(
+      videos.length,
+      3
+    );
+
   for (
     let i = 0;
-    i < 3;
+    i < count;
     i++
   ) {
 
@@ -504,6 +552,7 @@ function observe(el) {
 
   const observer =
     new IntersectionObserver(
+
       entries => {
 
         entries.forEach(e => {
