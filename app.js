@@ -13,12 +13,13 @@ const SUPABASE_URL =
   "https://qnkmaxjzjdegqnjceosk.supabase.co";
 
 const SUPABASE_KEY =
-  "PASTE_YOUR_FULL_PUBLISHABLE_KEY_HERE";
+  "sb_publishable_-YQSJlDLTKBUNxtfPhaFEQ_GjpNZYSq";
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const supabase =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
 // --------------------
 // VIDEO DATA
@@ -27,21 +28,27 @@ const supabase = window.supabase.createClient(
 const videos = [
   {
     id: "1",
-    title: "I share AI tools to help you work smarter and make money online 🔥",
+    title:
+      "I share AI tools to help you work smarter and make money online 🔥",
     creator: "prince_AI",
-    url: "https://www.youtube.com/embed/sRcd9fK6ECw?enablejsapi=1&mute=1"
+    url:
+      "https://www.youtube.com/embed/sRcd9fK6ECw?enablejsapi=1&mute=1"
   },
   {
     id: "2",
-    title: "AI me real business 🔥",
+    title:
+      "AI me real business 🔥",
     creator: "prince_AI",
-    url: "https://www.youtube.com/embed/tfkidUX4viA?enablejsapi=1&mute=1"
+    url:
+      "https://www.youtube.com/embed/tfkidUX4viA?enablejsapi=1&mute=1"
   },
   {
     id: "3",
-    title: "Would you hire a developer or let AI do it? 🔥",
+    title:
+      "Would you hire a developer or let AI do it? 🔥",
     creator: "prince_AI",
-    url: "https://www.youtube.com/embed/HEYjc91mzAs?enablejsapi=1&mute=1"
+    url:
+      "https://www.youtube.com/embed/HEYjc91mzAs?enablejsapi=1&mute=1"
   }
 ];
 
@@ -51,36 +58,78 @@ let index = 0;
 // APP START
 // --------------------
 
-window.addEventListener("load", async () => {
+window.addEventListener(
+  "load",
+  async () => {
 
-  feed = document.getElementById("feed");
+    feed =
+      document.getElementById("feed");
 
-  initFeed();
+    initFeed();
 
-  // SPLASH REMOVE
-  setTimeout(() => {
+    // SPLASH
+    setTimeout(() => {
 
-    const splash = document.getElementById("splash");
+      const splash =
+        document.getElementById(
+          "splash"
+        );
 
-    if (splash) {
+      if (splash) {
 
-      splash.style.opacity = "0";
+        splash.style.opacity = "0";
 
-      setTimeout(() => {
-        splash.style.display = "none";
-      }, 1000);
+        setTimeout(() => {
 
-    }
+          splash.style.display =
+            "none";
 
-  }, 5000);
+        }, 1000);
 
-  // INIT PI
-  initPi();
+      }
 
-  // AUTO LOGIN
-  await autoLogin();
+    }, 5000);
 
-});
+    // PI INIT
+    initPi();
+
+    // AUTO LOGIN
+    await autoLogin();
+
+    // TEST DATABASE
+    await testSupabase();
+
+  }
+);
+
+// --------------------
+// TEST SUPABASE
+// --------------------
+
+async function testSupabase() {
+
+  const { data, error } =
+    await supabase
+      .from("posts")
+      .select("*");
+
+  if (error) {
+
+    console.error(
+      "Supabase Error:",
+      error
+    );
+
+  } else {
+
+    console.log(
+      "Supabase Connected:",
+      data
+    );
+
+  }
+
+}
 
 // --------------------
 // PI INIT
@@ -90,7 +139,9 @@ function initPi() {
 
   if (!window.Pi) {
 
-    console.error("Pi SDK not detected");
+    console.error(
+      "Pi SDK not detected"
+    );
 
     return;
 
@@ -103,11 +154,16 @@ function initPi() {
       sandbox: true
     });
 
-    console.log("Pi SDK initialized");
+    console.log(
+      "Pi SDK initialized"
+    );
 
   } catch (err) {
 
-    console.error("Pi Init Error:", err);
+    console.error(
+      "Pi Init Error:",
+      err
+    );
 
   }
 
@@ -123,16 +179,24 @@ async function autoLogin() {
 
     if (!window.Pi) return;
 
-    const scopes = ['username', 'payments'];
+    const scopes = [
+      'username',
+      'payments'
+    ];
 
-    function onIncompletePaymentFound(payment) {
+    function onIncompletePaymentFound(
+      payment
+    ) {
+
       console.log(payment);
+
     }
 
-    const auth = await window.Pi.authenticate(
-      scopes,
-      onIncompletePaymentFound
-    );
+    const auth =
+      await window.Pi.authenticate(
+        scopes,
+        onIncompletePaymentFound
+      );
 
     currentUser = auth.user;
 
@@ -145,7 +209,9 @@ async function autoLogin() {
 
   } catch (err) {
 
-    console.log("Auto login skipped");
+    console.log(
+      "Auto login skipped"
+    );
 
   }
 
@@ -161,37 +227,52 @@ async function login() {
 
     if (!window.Pi) {
 
-      alert("Open inside Pi Browser");
+      alert(
+        "Open inside Pi Browser"
+      );
 
       return;
 
     }
 
-    const scopes = ['username', 'payments'];
+    const scopes = [
+      'username',
+      'payments'
+    ];
 
-    function onIncompletePaymentFound(payment) {
+    function onIncompletePaymentFound(
+      payment
+    ) {
+
       console.log(payment);
+
     }
 
-    const auth = await window.Pi.authenticate(
-      scopes,
-      onIncompletePaymentFound
-    );
+    const auth =
+      await window.Pi.authenticate(
+        scopes,
+        onIncompletePaymentFound
+      );
 
     currentUser = auth.user;
 
     alert(
-      "Welcome @" + auth.user.username
+      "Welcome @" +
+      auth.user.username
     );
 
     updateAuthButton();
 
   } catch (err) {
 
-    console.error("AUTH ERROR:", err);
+    console.error(
+      "AUTH ERROR:",
+      err
+    );
 
     alert(
-      "Login failed: " + err.message
+      "Login failed: " +
+      err.message
     );
 
   }
@@ -205,21 +286,27 @@ async function login() {
 function updateAuthButton() {
 
   const authBtn =
-    document.getElementById("authBtn");
+    document.getElementById(
+      "authBtn"
+    );
 
   if (!authBtn) return;
 
   if (currentUser) {
 
-    authBtn.innerText = "Logout";
+    authBtn.innerText =
+      "Logout";
 
-    authBtn.onclick = logout;
+    authBtn.onclick =
+      logout;
 
   } else {
 
-    authBtn.innerText = "Login";
+    authBtn.innerText =
+      "Login";
 
-    authBtn.onclick = login;
+    authBtn.onclick =
+      login;
 
   }
 
@@ -240,14 +327,16 @@ function logout() {
 }
 
 // --------------------
-// TIP PAYMENT
+// TIP
 // --------------------
 
 function tip() {
 
   if (!window.Pi) {
 
-    alert("Pi SDK unavailable");
+    alert(
+      "Pi SDK unavailable"
+    );
 
     return;
 
@@ -257,7 +346,8 @@ function tip() {
 
     amount: 0.05,
 
-    memo: "Support @prince_AI",
+    memo:
+      "Support @prince_AI",
 
     metadata: {
       type: "tip"
@@ -275,7 +365,10 @@ function tip() {
     onReadyForServerCompletion:
       function(paymentId, txid) {
 
-      console.log(paymentId, txid);
+      console.log(
+        paymentId,
+        txid
+      );
 
     },
 
@@ -298,7 +391,7 @@ function tip() {
 }
 
 // --------------------
-// RENDER VIDEO
+// RENDER
 // --------------------
 
 function render(video) {
@@ -348,7 +441,9 @@ function render(video) {
 function loadMore() {
 
   render(
-    videos[index % videos.length]
+    videos[
+      index % videos.length
+    ]
   );
 
   index++;
@@ -361,7 +456,11 @@ function loadMore() {
 
 function initFeed() {
 
-  for (let i = 0; i < 3; i++) {
+  for (
+    let i = 0;
+    i < 3;
+    i++
+  ) {
 
     loadMore();
 
@@ -373,22 +472,26 @@ function initFeed() {
 // SCROLL LOAD
 // --------------------
 
-window.addEventListener("scroll", () => {
+window.addEventListener(
+  "scroll",
+  () => {
 
-  if (
+    if (
 
-    window.innerHeight +
-    window.scrollY >=
+      window.innerHeight +
+      window.scrollY >=
 
-    document.body.offsetHeight - 200
+      document.body.offsetHeight
+      - 200
 
-  ) {
+    ) {
 
-    loadMore();
+      loadMore();
+
+    }
 
   }
-
-});
+);
 
 // --------------------
 // AUTO PLAY
@@ -400,35 +503,41 @@ function observe(el) {
     el.querySelector("iframe");
 
   const observer =
-    new IntersectionObserver(entries => {
+    new IntersectionObserver(
+      entries => {
 
-    entries.forEach(e => {
+        entries.forEach(e => {
 
-      if (!iframe) return;
+          if (!iframe) return;
 
-      iframe.contentWindow.postMessage(
+          iframe.contentWindow
+            .postMessage(
 
-        JSON.stringify({
+              JSON.stringify({
 
-          event: "command",
+                event:
+                  "command",
 
-          func: e.isIntersecting
-            ? "playVideo"
-            : "pauseVideo"
+                func:
+                  e.isIntersecting
+                    ? "playVideo"
+                    : "pauseVideo"
 
-        }),
+              }),
 
-        "*"
+              "*"
 
-      );
+            );
 
-    });
+        });
 
-  }, {
+      },
 
-    threshold: 0.75
+      {
+        threshold: 0.75
+      }
 
-  });
+    );
 
   observer.observe(el);
 
