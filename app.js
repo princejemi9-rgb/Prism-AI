@@ -36,7 +36,7 @@ let index = 0;
 // APP START
 // --------------------
 
-window.addEventListener("load", async () => {
+window.addEventListener("load", () => {
 
   feed = document.getElementById("feed");
 
@@ -44,30 +44,50 @@ window.addEventListener("load", async () => {
 
   // SPLASH REMOVE
   setTimeout(() => {
+
     const splash = document.getElementById("splash");
-    if (splash) splash.style.display = "none";
-  }, 2500);
 
-  // PI SDK INIT
-  try {
-
-    if (!window.Pi) {
-      alert("Open inside Pi Browser");
-      return;
+    if (splash) {
+      splash.style.display = "none";
     }
 
-    await window.Pi.init({
+  }, 2500);
+
+  // INIT PI SDK
+  initPi();
+
+});
+
+// --------------------
+// PI SDK INIT
+// --------------------
+
+function initPi() {
+
+  if (!window.Pi) {
+
+    console.error("Pi SDK not detected");
+
+    return;
+
+  }
+
+  try {
+
+    window.Pi.init({
       version: "2.0",
-      sandbox: false
+      sandbox: true
     });
 
     console.log("Pi SDK initialized");
 
   } catch (err) {
+
     console.error("Pi Init Error:", err);
+
   }
 
-});
+}
 
 // --------------------
 // LOGIN
@@ -78,12 +98,22 @@ async function login() {
   try {
 
     if (!window.Pi) {
+
       alert("Please open inside Pi Browser");
+
       return;
+
+    }
+
+    const scopes = ['username', 'payments'];
+
+    function onIncompletePaymentFound(payment) {
+      console.log(payment);
     }
 
     const auth = await window.Pi.authenticate(
-      ['username', 'payments']
+      scopes,
+      onIncompletePaymentFound
     );
 
     currentUser = auth.user;
@@ -92,12 +122,17 @@ async function login() {
 
     const authBtn = document.getElementById("authBtn");
 
-    authBtn.innerText = "Logout";
-    authBtn.onclick = logout;
+    if (authBtn) {
+
+      authBtn.innerText = "Logout";
+
+      authBtn.onclick = logout;
+
+    }
 
   } catch (err) {
 
-    console.error(err);
+    console.error("AUTH ERROR:", err);
 
     alert("Login failed: " + err.message);
 
@@ -115,8 +150,13 @@ function logout() {
 
   const authBtn = document.getElementById("authBtn");
 
-  authBtn.innerText = "Login";
-  authBtn.onclick = login;
+  if (authBtn) {
+
+    authBtn.innerText = "Login";
+
+    authBtn.onclick = login;
+
+  }
 
   alert("Logged out");
 
@@ -128,7 +168,13 @@ function logout() {
 
 function tip() {
 
-  if (!window.Pi) return;
+  if (!window.Pi) {
+
+    alert("Pi SDK unavailable");
+
+    return;
+
+  }
 
   window.Pi.createPayment({
 
@@ -214,7 +260,9 @@ function loadMore() {
 function initFeed() {
 
   for (let i = 0; i < 3; i++) {
+
     loadMore();
+
   }
 
 }
