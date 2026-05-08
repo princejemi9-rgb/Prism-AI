@@ -36,7 +36,7 @@ let index = 0;
 // APP START
 // --------------------
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
 
   feed = document.getElementById("feed");
 
@@ -53,8 +53,11 @@ window.addEventListener("load", () => {
 
   }, 2500);
 
-  // INIT PI SDK
+  // INIT PI
   initPi();
+
+  // AUTO AUTH FOR APP STUDIO
+  await autoLogin();
 
 });
 
@@ -90,7 +93,42 @@ function initPi() {
 }
 
 // --------------------
-// LOGIN
+// AUTO LOGIN
+// --------------------
+
+async function autoLogin() {
+
+  try {
+
+    if (!window.Pi) return;
+
+    const scopes = ['username', 'payments'];
+
+    function onIncompletePaymentFound(payment) {
+      console.log(payment);
+    }
+
+    const auth = await window.Pi.authenticate(
+      scopes,
+      onIncompletePaymentFound
+    );
+
+    currentUser = auth.user;
+
+    console.log("Authenticated:", auth.user.username);
+
+    updateAuthButton();
+
+  } catch (err) {
+
+    console.log("Auto login skipped");
+
+  }
+
+}
+
+// --------------------
+// LOGIN BUTTON
 // --------------------
 
 async function login() {
@@ -120,21 +158,37 @@ async function login() {
 
     alert("Welcome @" + auth.user.username);
 
-    const authBtn = document.getElementById("authBtn");
-
-    if (authBtn) {
-
-      authBtn.innerText = "Logout";
-
-      authBtn.onclick = logout;
-
-    }
+    updateAuthButton();
 
   } catch (err) {
 
     console.error("AUTH ERROR:", err);
 
     alert("Login failed: " + err.message);
+
+  }
+
+}
+
+// --------------------
+// UPDATE BUTTON
+// --------------------
+
+function updateAuthButton() {
+
+  const authBtn = document.getElementById("authBtn");
+
+  if (!authBtn) return;
+
+  if (currentUser) {
+
+    authBtn.innerText = "Logout";
+    authBtn.onclick = logout;
+
+  } else {
+
+    authBtn.innerText = "Login";
+    authBtn.onclick = login;
 
   }
 
@@ -148,15 +202,7 @@ function logout() {
 
   currentUser = null;
 
-  const authBtn = document.getElementById("authBtn");
-
-  if (authBtn) {
-
-    authBtn.innerText = "Login";
-
-    authBtn.onclick = login;
-
-  }
+  updateAuthButton();
 
   alert("Logged out");
 
