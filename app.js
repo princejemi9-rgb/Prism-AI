@@ -6,6 +6,21 @@ let currentUser = null;
 let feed;
 
 // --------------------
+// SUPABASE
+// --------------------
+
+const SUPABASE_URL =
+  "https://qnkmaxjzjdegqnjceosk.supabase.co";
+
+const SUPABASE_KEY =
+  "PASTE_YOUR_FULL_PUBLISHABLE_KEY_HERE";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+// --------------------
 // VIDEO DATA
 // --------------------
 
@@ -45,30 +60,30 @@ window.addEventListener("load", async () => {
   // SPLASH REMOVE
   setTimeout(() => {
 
-  const splash = document.getElementById("splash");
+    const splash = document.getElementById("splash");
 
-  if (splash) {
+    if (splash) {
 
-    splash.style.opacity = "0";
+      splash.style.opacity = "0";
 
-    setTimeout(() => {
-      splash.style.display = "none";
-    }, 1000);
+      setTimeout(() => {
+        splash.style.display = "none";
+      }, 1000);
 
-  }
+    }
 
-}, 5000);
+  }, 5000);
 
   // INIT PI
   initPi();
 
-  // AUTO AUTH FOR APP STUDIO
+  // AUTO LOGIN
   await autoLogin();
 
 });
 
 // --------------------
-// PI SDK INIT
+// PI INIT
 // --------------------
 
 function initPi() {
@@ -121,7 +136,10 @@ async function autoLogin() {
 
     currentUser = auth.user;
 
-    console.log("Authenticated:", auth.user.username);
+    console.log(
+      "Authenticated:",
+      auth.user.username
+    );
 
     updateAuthButton();
 
@@ -134,7 +152,7 @@ async function autoLogin() {
 }
 
 // --------------------
-// LOGIN BUTTON
+// LOGIN
 // --------------------
 
 async function login() {
@@ -143,7 +161,7 @@ async function login() {
 
     if (!window.Pi) {
 
-      alert("Please open inside Pi Browser");
+      alert("Open inside Pi Browser");
 
       return;
 
@@ -162,7 +180,9 @@ async function login() {
 
     currentUser = auth.user;
 
-    alert("Welcome @" + auth.user.username);
+    alert(
+      "Welcome @" + auth.user.username
+    );
 
     updateAuthButton();
 
@@ -170,7 +190,9 @@ async function login() {
 
     console.error("AUTH ERROR:", err);
 
-    alert("Login failed: " + err.message);
+    alert(
+      "Login failed: " + err.message
+    );
 
   }
 
@@ -182,18 +204,21 @@ async function login() {
 
 function updateAuthButton() {
 
-  const authBtn = document.getElementById("authBtn");
+  const authBtn =
+    document.getElementById("authBtn");
 
   if (!authBtn) return;
 
   if (currentUser) {
 
     authBtn.innerText = "Logout";
+
     authBtn.onclick = logout;
 
   } else {
 
     authBtn.innerText = "Login";
+
     authBtn.onclick = login;
 
   }
@@ -231,27 +256,41 @@ function tip() {
   window.Pi.createPayment({
 
     amount: 0.05,
+
     memo: "Support @prince_AI",
+
     metadata: {
       type: "tip"
     }
 
   }, {
 
-    onReadyForServerApproval: function(paymentId) {
+    onReadyForServerApproval:
+      function(paymentId) {
+
       console.log(paymentId);
+
     },
 
-    onReadyForServerCompletion: function(paymentId, txid) {
+    onReadyForServerCompletion:
+      function(paymentId, txid) {
+
       console.log(paymentId, txid);
+
     },
 
-    onCancel: function(paymentId) {
+    onCancel:
+      function(paymentId) {
+
       console.log(paymentId);
+
     },
 
-    onError: function(error, payment) {
+    onError:
+      function(error, payment) {
+
       console.error(error);
+
     }
 
   });
@@ -264,9 +303,11 @@ function tip() {
 
 function render(video) {
 
-  const div = document.createElement("div");
+  const div =
+    document.createElement("div");
 
-  div.className = "video-container";
+  div.className =
+    "video-container";
 
   div.innerHTML = `
   
@@ -277,12 +318,19 @@ function render(video) {
     </iframe>
 
     <div class="overlay">
+
       <h1>${video.title}</h1>
+
       <p>@${video.creator}</p>
+
     </div>
 
     <div class="actions">
-      <button onclick="tip()">💰 Tip</button>
+
+      <button onclick="tip()">
+        💰 Tip
+      </button>
+
     </div>
 
   `;
@@ -299,7 +347,9 @@ function render(video) {
 
 function loadMore() {
 
-  render(videos[index % videos.length]);
+  render(
+    videos[index % videos.length]
+  );
 
   index++;
 
@@ -326,8 +376,12 @@ function initFeed() {
 window.addEventListener("scroll", () => {
 
   if (
-    window.innerHeight + window.scrollY >=
+
+    window.innerHeight +
+    window.scrollY >=
+
     document.body.offsetHeight - 200
+
   ) {
 
     loadMore();
@@ -342,28 +396,38 @@ window.addEventListener("scroll", () => {
 
 function observe(el) {
 
-  const iframe = el.querySelector("iframe");
+  const iframe =
+    el.querySelector("iframe");
 
-  const observer = new IntersectionObserver(entries => {
+  const observer =
+    new IntersectionObserver(entries => {
 
     entries.forEach(e => {
 
       if (!iframe) return;
 
       iframe.contentWindow.postMessage(
+
         JSON.stringify({
+
           event: "command",
+
           func: e.isIntersecting
             ? "playVideo"
             : "pauseVideo"
+
         }),
+
         "*"
+
       );
 
     });
 
   }, {
+
     threshold: 0.75
+
   });
 
   observer.observe(el);
