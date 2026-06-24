@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prism AI</title>
+
+  <script>
+    (function () {
+      var pendingMessages = [];
+
+      function renderDebugMessages() {
+        var panel = document.getElementById("debugPanel");
+        if (!panel || !pendingMessages.length) return;
+
+        panel.hidden = false;
+        panel.style.display = "block";
+        panel.textContent = pendingMessages.join("\n\n");
+      }
+
+      function formatError(message, source, lineno, colno, error) {
+        var parts = [];
+        if (message) parts.push(String(message));
+        if (source) parts.push("Source: " + source);
+        if (lineno) parts.push("Line: " + lineno + (colno ? ":" + colno : ""));
+        if (error && error.stack) parts.push(error.stack);
+        return parts.join("\n");
+      }
+
+      window.showDebugMessage = function (message) {
+        var text = String(message || "Unknown error");
+        pendingMessages.push(text);
+        renderDebugMessages();
+      };
+
+      window.onerror = function (message, source, lineno, colno, error) {
+        window.showDebugMessage("JavaScript error:\n" + formatError(message, source, lineno, colno, error));
+        return false;
+      };
+
+      window.onunhandledrejection = function (event) {
+        var reason = event && event.reason;
+        var detail = reason && reason.stack ? reason.stack : reason;
+        window.showDebugMessage("JavaScript promise error:\n" + String(detail || "Unhandled promise rejection"));
+      };
+
+      document.addEventListener("DOMContentLoaded", function () {
+        renderDebugMessages();
+      });
+    })();
+  </script>
+
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- SPLASH SCREEN -->
+  <div id="splash">
+    <div class="logo">Prism AI</div>
+    <p>Watch. Learn. Earn.</p>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="brand">Prism AI</div>
+      <button id="loginBtn" type="button" disabled>Login</button>
+    </div>
+
+    <div
+      id="debugPanel"
+      role="status"
+      aria-live="polite"
+      hidden
+      style="display: none; white-space: pre-wrap; background: #7f1d1d; color: #ffffff; padding: 10px; font: 13px/1.4 Arial, sans-serif; max-height: 160px; overflow: auto;"
+    ></div>
+
+    <!-- FEED -->
+    <div class="feed" id="feed"></div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottombar">
+      <div>Home</div>
+      <div>Hot</div>
+      <div>Tips</div>
+      <div>Me</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
