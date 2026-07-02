@@ -138,6 +138,42 @@ button {
   font-weight: bold;
 }
 
+@media (max-width: 480px) {
+  .bottombar {
+    height: 60px;
+    gap: 4px;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .bottombar > div,
+  .bottombar > button {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 1.1;
+    box-sizing: border-box;
+  }
+
+  .bottombar > div {
+    padding: 4px 2px;
+  }
+
+  .bottombar button {
+    padding: 8px 6px;
+    margin-top: 0;
+    border-radius: 10px;
+    font-size: 11px;
+    justify-self: center;
+    max-width: 100%;
+  }
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
