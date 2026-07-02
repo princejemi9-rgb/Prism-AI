@@ -1,6 +1,13 @@
 
+html,
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
   font-family: Arial, sans-serif;
   background: black;
   color: white;
@@ -60,13 +67,18 @@ body {
   flex: 1;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* VIDEO CARD */
 .video-container {
-  height: 100vh;
+  min-height: 100%;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   position: relative;
+  background: black;
 }
 
 iframe {
@@ -103,6 +115,7 @@ button {
   border: none;
   background: #facc15;
   margin-top: 8px;
+  cursor: pointer;
 }
 
 /* BOTTOM NAV */
@@ -112,6 +125,90 @@ button {
   display: flex;
   justify-content: space-around;
   align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.bottombar button {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #facc15;
+  color: #000;
+  border: none;
+  font-weight: bold;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 10000;
+  padding: 20px;
+}
+
+.modal-backdrop.show {
+  display: flex;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: #111;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-close {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.modal label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #0b1220;
+  color: white;
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  min-width: 110px;
 }
 
 /* ANIMATION */

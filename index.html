@@ -81,12 +81,37 @@
     <!-- FEED -->
     <div class="feed" id="feed"></div>
 
+    <div class="modal-backdrop" id="uploadModal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
+        <div class="modal-header">
+          <h2 id="uploadModalTitle">Upload Post</h2>
+          <button type="button" class="modal-close" id="uploadCloseBtn" aria-label="Close upload form">×</button>
+        </div>
+        <form id="uploadForm">
+          <label for="uploadTitle">Title</label>
+          <input id="uploadTitle" name="title" type="text" required />
+
+          <label for="uploadCreator">Creator</label>
+          <input id="uploadCreator" name="creator" type="text" required />
+
+          <label for="uploadUrl">YouTube URL</label>
+          <input id="uploadUrl" name="video_url" type="url" required placeholder="https://www.youtube.com/watch?v=..." />
+
+          <div class="modal-actions">
+            <button type="submit">Upload</button>
+            <button type="button" id="uploadCancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- BOTTOM NAV -->
     <div class="bottombar">
       <div>Home</div>
       <div>Hot</div>
       <div>Tips</div>
       <div>Me</div>
+      <button id="uploadBtn" type="button">Create</button>
     </div>
   </div>
 

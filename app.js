@@ -37,11 +37,17 @@
     supabaseClient: null,
     videos: fallbackVideos.slice(),
     nextVideoIndex: 0,
-    observers: []
+    videoObserver: null,
+    activeVideoContainer: null
   };
 
   let loginBtn = null;
   let feed = null;
+  let uploadBtn = null;
+  let uploadModal = null;
+  let uploadForm = null;
+  let uploadCancelBtn = null;
+  let uploadCloseBtn = null;
 
   function showDebug(message) {
     const text = String(message || "Unknown error");
@@ -76,6 +82,60 @@
       return JSON.stringify(error, null, 2);
     } catch (jsonError) {
       return String(error);
+    }
+  }
+
+  function convertToEmbedUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") {
+      return rawUrl;
+    }
+
+    var trimmed = rawUrl.trim();
+    if (!trimmed) {
+      return rawUrl;
+    }
+
+    if (!/^https?:\/\//i.test(trimmed)) {
+      trimmed = "https://" + trimmed;
+    }
+
+    try {
+      var url = new URL(trimmed);
+      var host = url.hostname.toLowerCase();
+
+      if (host.includes("youtu.be")) {
+        var id = url.pathname.slice(1);
+        if (id) {
+          return "https://www.youtube.com/embed/" + id + "?enablejsapi=1&mute=1";
+        }
+      }
+
+      if (host.includes("youtube.com")) {
+        if (url.pathname.startsWith("/watch")) {
+          var id = url.searchParams.get("v");
+          if (id) {
+            return "https://www.youtube.com/embed/" + id + "?enablejsapi=1&mute=1";
+          }
+        }
+
+        if (url.pathname.startsWith("/shorts/")) {
+          var id = url.pathname.split("/shorts/")[1];
+          if (id) {
+            return "https://www.youtube.com/embed/" + id + "?enablejsapi=1&mute=1";
+          }
+        }
+
+        if (url.pathname.startsWith("/embed/")) {
+          var id = url.pathname.split("/embed/")[1];
+          if (id) {
+            return "https://www.youtube.com/embed/" + id + "?enablejsapi=1&mute=1";
+          }
+        }
+      }
+
+      return rawUrl;
+    } catch (error) {
+      return rawUrl;
     }
   }
 
@@ -241,10 +301,100 @@
   }
 
   function disconnectObservers() {
-    state.observers.forEach(function (observer) {
-      observer.disconnect();
-    });
-    state.observers = [];
+    if (state.videoObserver) {
+      state.videoObserver.disconnect();
+      state.videoObserver = null;
+    }
+    state.activeVideoContainer = null;
+  }
+
+  function openUploadModal() {
+    if (!uploadModal || !uploadForm) return;
+
+    uploadModal.hidden = false;
+    uploadModal.classList.add("show");
+    uploadForm.reset();
+
+    window.setTimeout(function () {
+      var titleField = uploadForm.querySelector("[name=title]");
+      if (titleField) {
+        titleField.focus();
+      }
+    }, 50);
+  }
+
+  function closeUploadModal() {
+    if (!uploadModal) return;
+
+    uploadModal.hidden = true;
+    uploadModal.classList.remove("show");
+  }
+
+  async function refreshFeed() {
+    try {
+      const videos = await loadSupabaseVideos();
+      if (videos.length) {
+        setFeedVideos(videos);
+        return;
+      }
+    } catch (error) {
+      showDebug("Feed refresh failed:\n" + formatError(error));
+    }
+
+    setFeedVideos(fallbackVideos);
+  }
+
+  async function insertSupabasePost(post) {
+    const client = getSupabaseClient();
+    const response = await client.from("posts").insert([post]);
+    if (response.error) {
+      throw response.error;
+    }
+    return response.data;
+  }
+
+  async function handleUploadSubmit(event) {
+    event.preventDefault();
+    if (!uploadForm) return;
+
+    const formData = new FormData(uploadForm);
+    const title = String(formData.get("title") || "").trim();
+    const creator = String(formData.get("creator") || "").trim();
+    const videoUrl = String(formData.get("video_url") || "").trim();
+
+    if (!title || !creator || !videoUrl) {
+      showDebug("Upload failed: title, creator, and video URL are required.");
+      return;
+    }
+
+    const embedUrl = convertToEmbedUrl(videoUrl);
+    if (!embedUrl) {
+      showDebug("Upload failed: invalid YouTube URL.");
+      return;
+    }
+
+    try {
+      const submitButton = uploadForm.querySelector("button[type=submit]");
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      await insertSupabasePost({
+        title: title,
+        creator: creator,
+        video_url: embedUrl
+      });
+
+      closeUploadModal();
+      refreshFeed();
+    } catch (error) {
+      showDebug("Upload failed:\n" + formatError(error));
+    } finally {
+      const submitButton = uploadForm.querySelector("button[type=submit]");
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
   }
 
   function setFeedVideos(videos) {
@@ -262,6 +412,67 @@
     }
   }
 
+  function sendIframeCommand(iframe, func) {
+    if (!iframe || !iframe.contentWindow) return;
+
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: func,
+          args: []
+        }),
+        "*"
+      );
+    } catch (error) {
+      showDebug("Video autoplay message failed:\n" + formatError(error));
+    }
+  }
+
+  function playIframe(iframe) {
+    sendIframeCommand(iframe, "playVideo");
+  }
+
+  function pauseIframe(iframe) {
+    sendIframeCommand(iframe, "pauseVideo");
+  }
+
+  function normalizeVideoUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== "string") {
+      return rawUrl;
+    }
+
+    try {
+      const url = new URL(rawUrl);
+      const hostname = url.hostname.toLowerCase();
+
+      if (hostname.includes("youtube.com") || hostname.includes("youtu.be")) {
+        if (hostname === "youtu.be") {
+          const videoId = url.pathname.slice(1);
+          if (videoId) {
+            url.hostname = "www.youtube.com";
+            url.pathname = "/embed/" + videoId;
+          }
+        }
+
+        if (url.pathname === "/watch") {
+          const videoId = url.searchParams.get("v");
+          if (videoId) {
+            url.pathname = "/embed/" + videoId;
+            url.searchParams.delete("v");
+          }
+        }
+
+        url.searchParams.set("enablejsapi", "1");
+        url.searchParams.set("mute", "1");
+      }
+
+      return url.toString();
+    } catch (error) {
+      return rawUrl;
+    }
+  }
+
   function render(video) {
     if (!feed || !video) return;
 
@@ -269,10 +480,11 @@
     container.className = "video-container";
 
     const iframe = document.createElement("iframe");
-    iframe.src = video.url;
+    iframe.src = normalizeVideoUrl(video.url);
     iframe.title = video.title || "Prism AI video";
     iframe.allow = "autoplay; encrypted-media; picture-in-picture";
     iframe.setAttribute("allowfullscreen", "allowfullscreen");
+    iframe.loading = "lazy";
 
     const overlay = document.createElement("div");
     overlay.className = "overlay";
@@ -328,34 +540,55 @@
     state.feedScrollAttached = true;
   }
 
-  function observe(element) {
-    const iframe = element.querySelector("iframe");
-
-    if (!iframe || typeof IntersectionObserver !== "function") {
+  function setupVideoObserver() {
+    if (state.videoObserver || typeof IntersectionObserver !== "function") {
       return;
     }
 
-    const observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!iframe.contentWindow) return;
+    state.videoObserver = new IntersectionObserver(function (entries) {
+      if (!entries || !entries.length) {
+        return;
+      }
 
-        try {
-          iframe.contentWindow.postMessage(
-            JSON.stringify({
-              event: "command",
-              func: entry.isIntersecting ? "playVideo" : "pauseVideo",
-              args: ""
-            }),
-            "*"
-          );
-        } catch (error) {
-          showDebug("Video autoplay message failed:\n" + formatError(error));
+      const mostVisible = entries.reduce(function (best, entry) {
+        return (!best || entry.intersectionRatio > best.intersectionRatio) ? entry : best;
+      }, null);
+
+      if (!mostVisible) {
+        return;
+      }
+
+      entries.forEach(function (entry) {
+        const iframe = entry.target.querySelector("iframe");
+        if (!iframe) return;
+
+        if (entry.target === mostVisible.target && mostVisible.intersectionRatio >= 0.6) {
+          if (state.activeVideoContainer !== entry.target) {
+            playIframe(iframe);
+            state.activeVideoContainer = entry.target;
+          }
+        } else {
+          pauseIframe(iframe);
+          if (state.activeVideoContainer === entry.target) {
+            state.activeVideoContainer = null;
+          }
         }
       });
-    }, { threshold: 0.75 });
+    }, {
+      root: feed,
+      threshold: [0.5, 0.75, 1]
+    });
+  }
 
-    observer.observe(element);
-    state.observers.push(observer);
+  function observe(element) {
+    if (!element || typeof IntersectionObserver !== "function") {
+      return;
+    }
+
+    setupVideoObserver();
+    if (state.videoObserver) {
+      state.videoObserver.observe(element);
+    }
   }
 
   async function initFeedOnce() {
@@ -393,6 +626,11 @@
 
     loginBtn = document.getElementById("loginBtn");
     feed = document.getElementById("feed");
+    uploadBtn = document.getElementById("uploadBtn");
+    uploadModal = document.getElementById("uploadModal");
+    uploadForm = document.getElementById("uploadForm");
+    uploadCloseBtn = document.getElementById("uploadCloseBtn");
+    uploadCancelBtn = document.getElementById("uploadCancelBtn");
 
     if (!feed) {
       showDebug("Feed container #feed was not found. The app cannot render videos.");
@@ -402,6 +640,36 @@
     if (loginBtn) {
       loginBtn.addEventListener("click", handleAuthClick);
     }
+
+    if (uploadBtn) {
+      uploadBtn.addEventListener("click", openUploadModal);
+    }
+
+    if (uploadForm) {
+      uploadForm.addEventListener("submit", handleUploadSubmit);
+    }
+
+    if (uploadCloseBtn) {
+      uploadCloseBtn.addEventListener("click", closeUploadModal);
+    }
+
+    if (uploadCancelBtn) {
+      uploadCancelBtn.addEventListener("click", closeUploadModal);
+    }
+
+    if (uploadModal) {
+      uploadModal.addEventListener("click", function (event) {
+        if (event.target === uploadModal) {
+          closeUploadModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && uploadModal && !uploadModal.hidden) {
+        closeUploadModal();
+      }
+    });
 
     hideSplashSoon();
     initPiOnce();
