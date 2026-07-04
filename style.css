@@ -129,6 +129,22 @@ button {
   padding: 0 10px;
 }
 
+.bottombar > div {
+  color: #fff;
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.bottombar > div:hover {
+  background: rgba(250, 204, 21, 0.2);
+}
+
 .bottombar button {
   padding: 10px 14px;
   border-radius: 12px;
