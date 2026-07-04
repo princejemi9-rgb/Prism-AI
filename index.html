@@ -78,10 +78,170 @@
       style="display: none; white-space: pre-wrap; background: #7f1d1d; color: #ffffff; padding: 10px; font: 13px/1.4 Arial, sans-serif; max-height: 160px; overflow: auto;"
     ></div>
 
-    <!-- FEED -->
-    <div class="feed" id="feed"></div>
+    <!-- VIEWS -->
+    <div class="view" id="view-home">
+      <!-- FEED (keep existing logic) -->
+      <div class="feed" id="feed"></div>
+    </div>
 
+    <div class="view" id="view-friends" hidden>
+      <div class="view-header">
+        <h2>Friends</h2>
+        <p class="subtle">Following creators & AI minds you’ll like</p>
+      </div>
+
+      <section class="section">
+        <h3>Following</h3>
+        <div class="chips">
+          <div class="chip">@prince_AI</div>
+          <div class="chip">@neural_chemist</div>
+          <div class="chip">@prompt_captain</div>
+        </div>
+        <div class="empty-hint">Placeholder — wire up real following list later.</div>
+      </section>
+
+      <section class="section">
+        <h3>Suggested AI Creators</h3>
+        <div class="cards">
+          <div class="mini-card">
+            <div class="avatar"></div>
+            <div class="mini-meta">
+              <div class="mini-title">@genius_sage</div>
+              <div class="mini-sub">AI tutor</div>
+            </div>
+            <button class="mini-cta" type="button">Follow</button>
+          </div>
+          <div class="mini-card">
+            <div class="avatar"></div>
+            <div class="mini-meta">
+              <div class="mini-title">@lucid_labs</div>
+              <div class="mini-sub">ML builder</div>
+            </div>
+            <button class="mini-cta" type="button">Follow</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="view" id="view-inbox" hidden>
+      <div class="view-header">
+        <h2>Inbox</h2>
+        <p class="subtle">Activity, notifications, and messages</p>
+      </div>
+
+      <section class="section">
+        <h3>Activity</h3>
+        <div class="list-item">💸 @prince_AI posted a new short</div>
+        <div class="list-item">🧠 @genius_sage liked your reply</div>
+        <div class="empty-hint">Placeholder feed</div>
+      </section>
+
+      <section class="section">
+        <h3>Notifications</h3>
+        <div class="list-item">🔔 New follower: @nova_writer</div>
+        <div class="list-item">✨ Tip received (demo)</div>
+      </section>
+
+      <section class="section">
+        <h3>Messages</h3>
+        <div class="list-item">@lucid_labs: “Want to collaborate on prompts?”</div>
+        <div class="empty-hint">Placeholder DM thread list</div>
+      </section>
+    </div>
+
+    <div class="view" id="view-profile" hidden>
+      <div class="profile-hero">
+        <div class="profile-avatar" aria-hidden="true"></div>
+        <div class="profile-meta">
+          <div class="profile-username" id="profile-username">Prince_AI</div>
+          <div class="profile-handle" id="profile-handle">@prince_tega_jemi</div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat">
+          <div class="stat-num" id="profile-following">128</div>
+          <div class="stat-label">Following</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="profile-followers">2.4K</div>
+          <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="profile-likes">18.2K</div>
+          <div class="stat-label">Likes</div>
+        </div>
+      </div>
+
+      <div class="profile-bio">
+        <p id="profile-bio">
+          Building AI tools that help you work smarter, learn fast, and earn from your creativity.
+        </p>
+      </div>
+
+      <div class="section" style="margin-top: 14px;">
+        <h3>My Videos</h3>
+        <div class="grid" id="profile-grid"></div>
+        <div class="empty-hint" id="profile-grid-empty">Loading videos…</div>
+      </div>
+    </div>
+
+    <!-- FULL-SCREEN PROFILE VIEWER -->
+    <div class="viewer-backdrop" id="profile-viewer-backdrop" hidden>
+      <div class="viewer" id="profile-viewer" role="dialog" aria-modal="true" aria-label="Profile video viewer">
+        <div class="viewer-topbar">
+          <button type="button" class="viewer-close" id="profile-viewer-close" aria-label="Close viewer">←</button>
+          <div class="viewer-top-meta">
+            <div class="viewer-creator" id="viewer-creator">@creator</div>
+          </div>
+        </div>
+
+        <div class="viewer-feed" id="viewer-feed"></div>
+
+        <div class="viewer-overlay">
+          <div class="viewer-title" id="viewer-title">Caption title</div>
+
+          <div class="viewer-actions">
+            <button type="button" class="viewer-action" id="viewer-tip">💰 Tip</button>
+            <button type="button" class="viewer-action" id="viewer-like" disabled>❤️ Like</button>
+            <button type="button" class="viewer-action" id="viewer-comment" disabled>💬 Comment</button>
+            <button type="button" class="viewer-action" id="viewer-share" disabled>↗ Share</button>
+            <button type="button" class="viewer-action" id="viewer-follow" disabled>➕ Follow</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST MENU (Edit/Delete) -->
+    <div class="postmenu-backdrop" id="postMenuBackdrop" hidden></div>
+    <div class="postmenu" id="postMenu" hidden>
+      <button type="button" id="postMenuEditBtn" class="postmenu-btn">Edit Caption</button>
+      <button type="button" id="postMenuDeleteBtn" class="postmenu-btn postmenu-btn-danger">Delete Post</button>
+      <button type="button" id="postMenuCancelBtn" class="postmenu-btn postmenu-btn-cancel">Cancel</button>
+    </div>
+
+    <!-- EDIT CAPTION MODAL -->
+    <div class="modal-backdrop" id="editPostModal" hidden>
+
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editPostModalTitle">
+        <div class="modal-header">
+          <h2 id="editPostModalTitle">Edit post</h2>
+          <button type="button" class="modal-close" id="editPostCloseBtn" aria-label="Close edit modal">×</button>
+        </div>
+        <form id="editPostForm">
+          <label for="editPostTitle">Caption / Title</label>
+          <input id="editPostTitle" name="editTitle" type="text" required />
+          <div class="modal-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="editPostCancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- UPLOAD MODAL (keep existing IDs; app.js expects these) -->
     <div class="modal-backdrop" id="uploadModal" hidden>
+
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
         <div class="modal-header">
           <h2 id="uploadModalTitle">Create Post</h2>
@@ -120,6 +280,7 @@
             <button type="submit" id="uploadSubmitBtn">Upload</button>
             <button type="button" id="uploadCancelBtn">Cancel</button>
           </div>
+
           <div id="uploadProgress" class="upload-progress" style="display: none;">
             <div class="progress-bar">
               <div id="progressFill" class="progress-fill"></div>
@@ -136,16 +297,22 @@
         <span class="nav-icon">🏠</span>
         <span class="nav-label">Home</span>
       </div>
-      <div class="nav-item" data-nav="hot">
-        <span class="nav-icon">🔥</span>
-        <span class="nav-label">Hot</span>
+      <div class="nav-item" data-nav="friends">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Friends</span>
       </div>
-      <button id="uploadBtn" type="button" class="nav-create">
+
+      <button id="uploadBtn" type="button" class="nav-create" aria-label="Create">
         <span class="create-icon">+</span>
       </button>
-      <div class="nav-item" data-nav="me">
+
+      <div class="nav-item" data-nav="inbox">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">Inbox</span>
+      </div>
+      <div class="nav-item" data-nav="profile">
         <span class="nav-icon">👤</span>
-        <span class="nav-label">Me</span>
+        <span class="nav-label">Profile</span>
       </div>
     </div>
   </div>
@@ -153,3 +320,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
