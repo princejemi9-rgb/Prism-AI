@@ -84,22 +84,47 @@
     <div class="modal-backdrop" id="uploadModal" hidden>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
         <div class="modal-header">
-          <h2 id="uploadModalTitle">Upload Post</h2>
+          <h2 id="uploadModalTitle">Create Post</h2>
           <button type="button" class="modal-close" id="uploadCloseBtn" aria-label="Close upload form">×</button>
         </div>
         <form id="uploadForm">
-          <label for="uploadTitle">Title</label>
-          <input id="uploadTitle" name="title" type="text" required />
+          <div class="upload-tabs">
+            <button type="button" class="tab-btn active" data-tab="phone">📱 Phone</button>
+            <button type="button" class="tab-btn" data-tab="youtube">▶️ YouTube</button>
+          </div>
 
-          <label for="uploadCreator">Creator</label>
-          <input id="uploadCreator" name="creator" type="text" required />
+          <div id="phone-tab" class="tab-content active">
+            <label for="uploadTitle">Title</label>
+            <input id="uploadTitle" name="title" type="text" required />
 
-          <label for="uploadUrl">YouTube URL</label>
-          <input id="uploadUrl" name="video_url" type="url" required placeholder="https://www.youtube.com/watch?v=..." />
+            <label for="uploadCreator">Creator</label>
+            <input id="uploadCreator" name="creator" type="text" required />
+
+            <label for="uploadVideo">Select Video File</label>
+            <input id="uploadVideo" name="video_file" type="file" accept="video/*" />
+            <small>Supported: MP4, WebM, MOV (max 50MB)</small>
+          </div>
+
+          <div id="youtube-tab" class="tab-content">
+            <label for="uploadTitle2">Title</label>
+            <input id="uploadTitle2" name="title2" type="text" />
+
+            <label for="uploadCreator2">Creator</label>
+            <input id="uploadCreator2" name="creator2" type="text" />
+
+            <label for="uploadUrl">YouTube URL</label>
+            <input id="uploadUrl" name="video_url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
 
           <div class="modal-actions">
-            <button type="submit">Upload</button>
+            <button type="submit" id="uploadSubmitBtn">Upload</button>
             <button type="button" id="uploadCancelBtn">Cancel</button>
+          </div>
+          <div id="uploadProgress" class="upload-progress" style="display: none;">
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="progressText">Uploading...</p>
           </div>
         </form>
       </div>
@@ -107,11 +132,21 @@
 
     <!-- BOTTOM NAV -->
     <div class="bottombar">
-      <div>🏠 Home</div>
-      <div>🔥 Hot</div>
-      <div>💰 Tips</div>
-      <div>👤 Me</div>
-      <button id="uploadBtn" type="button">✏️ Create</button>
+      <div class="nav-item" data-nav="home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </div>
+      <div class="nav-item" data-nav="hot">
+        <span class="nav-icon">🔥</span>
+        <span class="nav-label">Hot</span>
+      </div>
+      <button id="uploadBtn" type="button" class="nav-create">
+        <span class="create-icon">+</span>
+      </button>
+      <div class="nav-item" data-nav="me">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Me</span>
+      </div>
     </div>
   </div>
 

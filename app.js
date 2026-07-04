@@ -357,27 +357,131 @@
     event.preventDefault();
     if (!uploadForm) return;
 
-    const formData = new FormData(uploadForm);
-    const title = String(formData.get("title") || "").trim();
-    const creator = String(formData.get("creator") || "").trim();
-    const videoUrl = String(formData.get("video_url") || "").trim();
+    const activeTab = document.querySelector(".tab-content.active");
+    if (!activeTab) return;
 
-    if (!title || !creator || !videoUrl) {
-      showDebug("Upload failed: title, creator, and video URL are required.");
+    const isPhoneTab = activeTab.id === "phone-tab";
+    
+    if (isPhoneTab) {
+      await handlePhoneVideoUpload();
+    } else {
+      await handleYouTubeUpload();
+    }
+
+    // Keep modal open only if upload handlers threw; otherwise they close themselves
+
+  }
+
+  async function handlePhoneVideoUpload() {
+    const titleField = uploadForm.querySelector("[name=title]");
+    const creatorField = uploadForm.querySelector("[name=creator]");
+    const videoFile = uploadForm.querySelector("[name=video_file]");
+
+    const SUPABASE_STORAGE_BUCKET = "videos";
+    const SUPABASE_STORAGE_PUBLIC_FOLDER = "uploads";
+
+    const title = String(titleField?.value || "").trim();
+    const creator = String(creatorField?.value || "").trim();
+    const file = videoFile?.files?.[0];
+
+    if (!title || !creator || !file) {
+      showDebug("Phone upload failed: title, creator, and video file are required.");
       return;
     }
 
-    const embedUrl = convertToEmbedUrl(videoUrl);
-    if (!embedUrl) {
-      showDebug("Upload failed: invalid YouTube URL.");
+    if (!file.type.startsWith("video/")) {
+      showDebug("Upload failed: selected file must be a video.");
       return;
     }
 
     try {
       const submitButton = uploadForm.querySelector("button[type=submit]");
-      if (submitButton) {
-        submitButton.disabled = true;
+      const progressDiv = document.getElementById("uploadProgress");
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+
+      if (submitButton) submitButton.disabled = true;
+      if (progressDiv) progressDiv.style.display = "block";
+
+      // Upload video file to Supabase Storage
+      const fileName = Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9._-]/g, "");
+      const objectPath = (SUPABASE_STORAGE_PUBLIC_FOLDER ? SUPABASE_STORAGE_PUBLIC_FOLDER + "/" : "") + fileName;
+      const client = getSupabaseClient();
+
+      // Upload (supports progress in some browsers; falls back to simple upload without progress details)
+      if (progressText) progressText.textContent = "Uploading to Storage...";
+
+      // Supabase-js v2 storage upload
+      const uploadResult = await client.storage
+        .from(SUPABASE_STORAGE_BUCKET)
+        .upload(objectPath, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (uploadResult.error) {
+        throw uploadResult.error;
       }
+
+      // Get a public URL
+      const { data: publicUrlData, error: publicUrlError } = client.storage
+        .from(SUPABASE_STORAGE_BUCKET)
+        .getPublicUrl(objectPath);
+
+      if (publicUrlError) {
+        throw publicUrlError;
+      }
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      if (progressFill) progressFill.style.width = "100%";
+      if (progressText) progressText.textContent = "Saving to database...";
+
+      // Save post metadata to Supabase
+      await insertSupabasePost({
+        title: title,
+        creator: creator,
+        video_url: publicUrl
+      });
+
+      if (progressDiv) progressDiv.style.display = "none";
+      closeUploadModal();
+      refreshFeed();
+      
+      showDebug("Video uploaded successfully!");
+    } catch (error) {
+      showDebug("Phone upload failed:\n" + formatError(error));
+    } finally {
+      const submitButton = uploadForm.querySelector("button[type=submit]");
+      if (submitButton) submitButton.disabled = false;
+      const progressDiv = document.getElementById("uploadProgress");
+      if (progressDiv) progressDiv.style.display = "none";
+    }
+  }
+
+  async function handleYouTubeUpload() {
+    const titleField = uploadForm.querySelector("[name=title2]");
+    const creatorField = uploadForm.querySelector("[name=creator2]");
+    const urlField = uploadForm.querySelector("[name=video_url]");
+
+    const title = String(titleField?.value || "").trim();
+    const creator = String(creatorField?.value || "").trim();
+    const videoUrl = String(urlField?.value || "").trim();
+
+    if (!title || !creator || !videoUrl) {
+      showDebug("YouTube upload failed: title, creator, and video URL are required.");
+      return;
+    }
+
+    const embedUrl = convertToEmbedUrl(videoUrl);
+    if (!embedUrl) {
+      showDebug("YouTube upload failed: invalid YouTube URL.");
+      return;
+    }
+
+    try {
+      const submitButton = uploadForm.querySelector("button[type=submit]");
+      if (submitButton) submitButton.disabled = true;
 
       await insertSupabasePost({
         title: title,
@@ -387,14 +491,52 @@
 
       closeUploadModal();
       refreshFeed();
+      showDebug("Video added successfully!");
     } catch (error) {
-      showDebug("Upload failed:\n" + formatError(error));
+      showDebug("YouTube upload failed:\n" + formatError(error));
     } finally {
       const submitButton = uploadForm.querySelector("button[type=submit]");
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+      if (submitButton) submitButton.disabled = false;
     }
+  }
+
+  function setupTabHandlers() {
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    if (!tabButtons.length) return;
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        const tabName = btn.getAttribute("data-tab");
+        if (!tabName) return;
+
+        // Hide all tabs and remove active class
+        document.querySelectorAll(".tab-content").forEach(function (tab) {
+          tab.classList.remove("active");
+        });
+        document.querySelectorAll(".tab-btn").forEach(function (b) {
+          b.classList.remove("active");
+        });
+
+        // Show selected tab and add active class
+        const tabContent = document.getElementById(tabName + "-tab");
+        if (tabContent) {
+          tabContent.classList.add("active");
+          btn.classList.add("active");
+
+          // Clear form fields when switching tabs
+          if (tabName === "phone") {
+            uploadForm.querySelector("[name=title2]").value = "";
+            uploadForm.querySelector("[name=creator2]").value = "";
+            uploadForm.querySelector("[name=video_url]").value = "";
+          } else {
+            uploadForm.querySelector("[name=title]").value = "";
+            uploadForm.querySelector("[name=creator]").value = "";
+            uploadForm.querySelector("[name=video_file]").value = "";
+          }
+        }
+      });
+    });
   }
 
   function setFeedVideos(videos) {
@@ -664,6 +806,18 @@
         }
       });
     }
+
+    // Setup tab switching for upload form
+    setupTabHandlers();
+
+    // Setup bottom nav item click handlers
+    document.querySelectorAll(".nav-item").forEach(function (item) {
+      item.addEventListener("click", function () {
+        const nav = item.getAttribute("data-nav");
+        showDebug("Tapped: " + nav);
+        // Add navigation logic here as needed
+      });
+    });
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && uploadModal && !uploadModal.hidden) {
