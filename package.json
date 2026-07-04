@@ -1,0 +1,9 @@
+{
+  "name": "pi-network-app",
+  "version": "1.0.0",
+  "description": "Pi Network social feed app",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server -p 3000 -c-1"
+  }
+}
