@@ -65,6 +65,22 @@
     }
   }
 
+  function showViewerUI(show) {
+    const backdrop = getEl("profile-viewer-backdrop");
+    if (!backdrop) return;
+
+    if (show) {
+      backdrop.hidden = false;
+      backdrop.style.display = "block";
+      document.body.style.overflow = "hidden";
+    } else {
+      backdrop.hidden = true;
+      backdrop.style.display = "none";
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+
   function formatError(error) {
     if (!error) return "Unknown error";
     if (typeof error === "string") return error;
@@ -596,6 +612,49 @@
     return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
   }
 
+  function getYouTubeThumbnailFromUrl(url) {
+    if (!url || typeof url !== "string") return null;
+
+    // handle typical embed urls
+    // - https://www.youtube.com/embed/<id>?...
+    // - https://www.youtube.com/watch?v=<id>
+    // - https://youtu.be/<id>
+    try {
+      // normalize to URL parsing
+      const u = new URL(url, "https://example.com");
+      const hostname = u.hostname.toLowerCase();
+
+      let id = null;
+
+      if (hostname.includes("youtu.be")) {
+        id = u.pathname.slice(1);
+      } else if (hostname.includes("youtube.com")) {
+        if (u.pathname.startsWith("/embed/")) {
+          id = u.pathname.split("/embed/")[1];
+        } else if (u.pathname === "/watch") {
+          id = u.searchParams.get("v");
+        } else if (u.pathname.startsWith("/shorts/")) {
+          id = u.pathname.split("/shorts/")[1];
+        }
+      }
+
+      if (id) {
+        return "https://img.youtube.com/vi/" + id + "/hqdefault.jpg";
+      }
+    } catch (e) {
+      // fall through
+    }
+
+    // fallback for embed strings that are not parseable as full URL
+    const match = String(url).match(/(?:\/embed\/|v=|\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{6,})/);
+    if (match && match[1]) {
+      return "https://img.youtube.com/vi/" + match[1] + "/hqdefault.jpg";
+    }
+
+    return null;
+  }
+
+
   function isDirectStorageOrMediaUrl(url) {
     if (!url || typeof url !== "string") return false;
     // Supabase public URLs are often direct to the file; also support any common media extension.
@@ -783,6 +842,64 @@
     }
   }
 
+  function getDirectVideoPreviewFallbackPoster(videoUrl) {
+    // Use best-effort data: some browsers support poster= for videos but we can't render <video> in grid.
+    // So we try to use the video URL as a source for an <img> only if the browser supports video-to-frame rendering.
+    // Otherwise, we return null and keep thumbnail background.
+    if (!looksLikeDirectVideo(videoUrl)) return null;
+    return videoUrl;
+  }
+
+  function renderDirectVideoGridPreview(thumbEl, videoUrl) {
+    // Create a tiny muted looping <video> preview as background.
+    // This keeps behavior light and non-autoplay in viewer (viewer uses separate logic).
+    const videoEl = document.createElement("video");
+    videoEl.src = videoUrl;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.loop = true;
+    videoEl.autoplay = true;
+    videoEl.controls = false;
+    videoEl.preload = "metadata";
+    videoEl.setAttribute("webkit-playsinline", "true");
+    videoEl.setAttribute("playsinline", "true");
+    videoEl.setAttribute("x5-playsinline", "true");
+    videoEl.style.position = "absolute";
+    videoEl.style.inset = "0";
+    videoEl.style.width = "100%";
+    videoEl.style.height = "100%";
+    videoEl.style.objectFit = "cover";
+    videoEl.style.display = "block";
+    videoEl.style.background = "rgba(255,255,255,0.03)";
+
+    // Ensure it stays non-intrusive
+    videoEl.addEventListener("error", function () {
+      // If preview fails, replace with a blank img fallback poster attempt.
+      try {
+        thumbEl.querySelector("video")?.remove();
+      } catch (e) {}
+
+      const posterUrl = getDirectVideoPreviewFallbackPoster(videoUrl);
+      if (posterUrl) {
+        const img = document.createElement("img");
+        img.className = "grid-thumb-img";
+        img.alt = "";
+        img.src = posterUrl;
+        thumbEl.insertBefore(img, thumbEl.firstChild);
+      }
+    });
+
+    // Try to play; ignore autoplay errors (muted should usually work)
+    try {
+      const p = videoEl.play();
+      if (p && typeof p.then === "function") p.catch(function () {});
+    } catch (e) {
+      // ignore
+    }
+
+    thumbEl.appendChild(videoEl);
+  }
+
   async function loadProfileVideos() {
     const grid = document.getElementById("profile-grid");
     const empty = document.getElementById("profile-grid-empty");
@@ -819,10 +936,31 @@
       item.dataset.title = video.title;
       item.dataset.url = video.url;
 
-      // Thumbnail-only: do NOT render iframe/video inside grid.
-      // Clicking a thumbnail opens the full-screen TikTok/Reels viewer.
+      // Thumbnail-only: do NOT render iframes inside grid.
       const thumb = document.createElement("div");
       thumb.className = "grid-thumb";
+
+      const ytThumb = getYouTubeThumbnailFromUrl(video.url);
+      if (ytThumb) {
+        const thumbImg = document.createElement("img");
+        thumbImg.className = "grid-thumb-img";
+        thumbImg.alt = video.title ? String(video.title).slice(0, 60) : "";
+        thumbImg.src = ytThumb;
+        thumb.appendChild(thumbImg);
+      } else if (video.url && !looksLikeYoutube(video.url) && isDirectStorageOrMediaUrl(video.url)) {
+        // Direct uploads: show a muted preview video in the grid + play icon overlay.
+        renderDirectVideoGridPreview(thumb, video.url);
+      } else {
+        // Unknown: keep background; optionally attempt direct poster via <img>.
+        const posterUrl = getDirectVideoPreviewFallbackPoster(video.url);
+        if (posterUrl) {
+          const thumbImg = document.createElement("img");
+          thumbImg.className = "grid-thumb-img";
+          thumbImg.alt = video.title ? String(video.title).slice(0, 60) : "";
+          thumbImg.src = posterUrl;
+          thumb.appendChild(thumbImg);
+        }
+      }
 
       const overlayPlay = document.createElement("div");
       overlayPlay.className = "grid-thumb-play";
@@ -846,7 +984,6 @@
       });
 
       item.addEventListener("click", function () {
-        // Ensure viewer swipe list is exactly the tapped creator’s videos.
         openProfileViewerForPost(video, list, idx);
       });
       item.addEventListener("keydown", function (e) {
@@ -856,7 +993,6 @@
         }
       });
 
-      // Show menu only for your own posts
       if (username && video.creator === username) {
         menu.style.display = "flex";
       }
@@ -908,21 +1044,170 @@
   }
 
 
-  function showViewerUI(show) {
-    const backdrop = getEl("profile-viewer-backdrop");
-    if (!backdrop) return;
+  function showEditProfileModal(prefill) {
+    const modal = getEl("editProfileModal");
+    if (!modal) return;
 
-    if (show) {
-      backdrop.hidden = false;
-      backdrop.style.display = "block";
-      document.body.style.overflow = "hidden";
-    } else {
-      backdrop.hidden = true;
-      backdrop.style.display = "none";
-      document.body.style.overflow = "hidden";
+    const form = getEl("editProfileForm");
+    const saveBtn = getEl("editProfileSaveBtn");
+    const cancelBtn = getEl("editProfileCancelBtn");
+    const closeBtn = getEl("editProfileCloseBtn");
+
+    const usernameInput = getEl("editProfileUsername");
+    const handleInput = getEl("editProfileHandle");
+    const bioInput = getEl("editProfileBio");
+    const avatarInput = getEl("editProfileAvatarInput");
+    const avatarPreview = getEl("editProfileAvatarPreview");
+
+    if (!form || !saveBtn || !cancelBtn || !closeBtn || !usernameInput || !handleInput || !bioInput || !avatarInput) {
+      return;
     }
 
+    const data = prefill || {};
+
+    usernameInput.value = String(data.username || "");
+    handleInput.value = String(data.handle || "");
+    bioInput.value = String(data.bio || "");
+
+    // Ensure preview shows persisted avatar unless user picks a new one.
+    try {
+      const lsAvatar = window.localStorage.getItem("prism_profile_avatar_dataurl");
+      if (lsAvatar && avatarPreview) {
+        avatarPreview.style.backgroundImage = "url('" + lsAvatar + "')";
+        avatarPreview.style.backgroundSize = "cover";
+        avatarPreview.style.backgroundPosition = "center";
+      } else if (avatarPreview) {
+        avatarPreview.style.backgroundImage = "";
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Reset current temp avatar buffer for this open.
+    form.dataset.avatarTemp = "";
+
+    // Bind avatar picker (preview only; persist on Save)
+    if (!form.dataset.avatarBound && avatarInput) {
+      form.dataset.avatarBound = "1";
+      avatarInput.addEventListener("change", function () {
+        if (!avatarInput.files || !avatarInput.files.length) return;
+        const file = avatarInput.files[0];
+        if (!file) return;
+
+        if (avatarPreview) {
+          avatarPreview.style.backgroundImage = "";
+        }
+
+        const reader = new FileReader();
+        reader.onload = function () {
+          const dataUrl = String(reader.result || "");
+          if (!dataUrl) return;
+
+          if (avatarPreview) {
+            avatarPreview.style.backgroundImage = "url('" + dataUrl + "')";
+            avatarPreview.style.backgroundSize = "cover";
+            avatarPreview.style.backgroundPosition = "center";
+          }
+
+          // Store temp value in form dataset; commit on Save
+          form.dataset.avatarTemp = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Bind submit
+    if (!form.dataset.bound) {
+      form.dataset.bound = "1";
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (saveBtn) saveBtn.disabled = true;
+        try {
+          const username = String(usernameInput.value || "").trim();
+          let handle = String(handleInput.value || "").trim();
+          const bio = String(bioInput.value || "").trim();
+
+          if (!username || !handle || !bio) {
+            alert("Username, handle, and bio are required.");
+            return;
+          }
+
+          if (handle && !handle.startsWith("@")) handle = "@" + handle;
+
+          const payload = {
+            username: username,
+            handle: handle,
+            bio: bio
+          };
+
+          try {
+            window.localStorage.setItem("prism_profile_data", JSON.stringify(payload));
+          } catch (e) {
+            // ignore
+          }
+
+          // Commit temp avatar on Save
+          const tempAvatar = form.dataset.avatarTemp ? String(form.dataset.avatarTemp) : "";
+          if (tempAvatar) {
+            try {
+              window.localStorage.setItem("prism_profile_avatar_dataurl", tempAvatar);
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          // Update UI immediately
+          const uEl = getEl("profile-username");
+          const hEl = getEl("profile-handle");
+          const bEl = getEl("profile-bio");
+          const aEl = getEl("profile-avatar");
+
+          if (uEl) uEl.textContent = payload.username;
+          if (hEl) hEl.textContent = payload.handle;
+          if (bEl) bEl.textContent = payload.bio;
+
+          try {
+            const lsAvatar = window.localStorage.getItem("prism_profile_avatar_dataurl");
+            if (lsAvatar && aEl) {
+              aEl.style.backgroundImage = "url('" + lsAvatar + "')";
+              aEl.style.backgroundSize = "cover";
+              aEl.style.backgroundPosition = "center";
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          closeEditProfileModal();
+        } finally {
+          if (saveBtn) saveBtn.disabled = false;
+        }
+      });
+    }
+
+    // Bind cancel/close
+    if (!cancelBtn.dataset.bound && !closeBtn.dataset.bound) {
+      cancelBtn.dataset.bound = "1";
+      closeBtn.dataset.bound = "1";
+
+      cancelBtn.addEventListener("click", function () {
+        closeEditProfileModal();
+      });
+      closeBtn.addEventListener("click", function () {
+        closeEditProfileModal();
+      });
+    }
+
+    modal.hidden = false;
+    modal.style.display = "flex";
   }
+
+  function closeEditProfileModal() {
+    const modal = getEl("editProfileModal");
+    if (!modal) return;
+    modal.hidden = true;
+    modal.style.display = "none";
+  }
+
 
 
 
@@ -1015,7 +1300,11 @@
     viewerFeedEl.innerHTML = "";
 
     viewerState.creatorVideos = tappedVideos || [];
-    viewerState.startIndex = startIndex || 0;
+    viewerState.startIndex = Math.max(0, Number(startIndex || 0));
+    if (viewerState.creatorVideos.length) {
+      viewerState.startIndex = Math.min(viewerState.startIndex, viewerState.creatorVideos.length - 1);
+    }
+
     viewerState.currentPost = viewerState.creatorVideos[viewerState.startIndex] || null;
     viewerState.activeContainer = null;
 
@@ -1048,64 +1337,37 @@
         videoEl.setAttribute("playsinline", "true");
         videoEl.setAttribute("x5-playsinline", "true");
 
-        // Use inline fallback: if the browser requires a play() call
         videoEl.pause();
         item.appendChild(videoEl);
       }
 
       viewerFeedEl.appendChild(item);
-
-
-      if (viewerState.observer) {
-        viewerState.observer.observe(item);
-      }
     });
 
     // start at tapped item
     const items = viewerFeedEl.querySelectorAll(".viewer-video");
     if (items && items.length > viewerState.startIndex) {
       const target = items[viewerState.startIndex];
-      // Scroll into view; snap should align.
+
+      // Ensure scroll position is correct immediately.
+      // Autoplay is handled after observer attachment in openProfileViewerForPost().
       target.scrollIntoView({ block: "start", behavior: "instant" });
       updateViewerMeta(viewerState.creatorVideos[viewerState.startIndex]);
-
-      // Immediate play of tapped one
-      const iframe = target.querySelector("iframe");
-      const videoEl = target.querySelector("video");
-
-      if (iframe) {
-        playIframe(iframe);
-        viewerState.activeContainer = target;
-      } else if (videoEl) {
-        try {
-          videoEl.currentTime = 0;
-          const p = videoEl.play();
-          if (p && typeof p.then === "function") {
-            p.catch(function () {
-              // ignore autoplay errors
-            });
-          }
-          viewerState.activeContainer = target;
-        } catch (e) {
-          // ignore
-        }
-      }
     }
 
+
   }
+
 
   function openProfileViewerForPost(tappedVideo, creatorVideos, startIndex) {
 
     if (!tappedVideo || !creatorVideos || !creatorVideos.length) return;
 
-    // creatorVideos passed from grid might include more than the tapped creator if user isn’t logged in.
-    // Filter again to guarantee TikTok-style swipe stays on tapped creator’s posts only.
     const creator = tappedVideo.creator;
     const filtered = creator ? creatorVideos.filter(function (v) {
       return v && v.creator === creator;
     }) : creatorVideos;
 
-    // Find correct start index inside the filtered list.
     let resolvedIndex = 0;
     if (filtered && filtered.length) {
       resolvedIndex = filtered.findIndex(function (v) {
@@ -1113,8 +1375,6 @@
       });
       if (resolvedIndex < 0) resolvedIndex = startIndex || 0;
     }
-
-    viewerState.creatorVideos = filtered;
 
     // Setup close button + tip button once
     const closeBtn = getEl("profile-viewer-close");
@@ -1138,17 +1398,54 @@
     const viewerFeedEl = getEl("viewer-feed");
     if (!viewerFeedEl) return;
 
-    createViewerObserver(viewerFeedEl);
+    // Hard reset: ensures scrolling works after coming from Profile.
+    if (viewerState.observer) {
+      viewerState.observer.disconnect();
+      viewerState.observer = null;
+    }
+    viewerState.activeContainer = null;
+
+    // Render first, then attach observer and deterministically start at tapped index.
+    // This avoids timing issues where observer might not see the correct elements yet.
     renderViewerFeed(filtered, resolvedIndex);
 
-    // Observe after render
+    createViewerObserver(viewerFeedEl);
+
     const items = viewerFeedEl.querySelectorAll(".viewer-video");
     if (viewerState.observer && items && items.length) {
       items.forEach(function (item) {
         viewerState.observer.observe(item);
       });
     }
+
+    // Force autoplay again after observer attachment.
+    // Some browsers need a second play() call after scroll/attach.
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        const target = viewerFeedEl.querySelector('.viewer-video[data-index="' + viewerState.startIndex + '"]');
+        if (!target) return;
+        const iframe = target.querySelector("iframe");
+        const videoEl = target.querySelector("video");
+        if (iframe) {
+          playIframe(iframe);
+          viewerState.activeContainer = target;
+        } else if (videoEl) {
+          try {
+            videoEl.currentTime = 0;
+            const p = videoEl.play();
+            if (p && typeof p.then === "function") {
+              p.catch(function () {});
+            }
+            viewerState.activeContainer = target;
+          } catch (e) {
+            // ignore
+          }
+        }
+      });
+    });
+
   }
+
 
   function closeProfileViewer() {
     showViewerUI(false);
@@ -1158,18 +1455,20 @@
       document.body.style.overflow = "hidden";
     }
 
-    // Clear active container so observer doesn't race with the close.
     viewerState.activeContainer = null;
 
     if (viewerState.observer) {
-
-
       viewerState.observer.disconnect();
       viewerState.observer = null;
     }
+
     viewerState.activeContainer = null;
     viewerState.currentPost = null;
+
+    const viewerFeedEl = getEl("viewer-feed");
+    if (viewerFeedEl) viewerFeedEl.innerHTML = "";
   }
+
 
   function showPostMenu(video) {
     if (!video) return;
@@ -1480,9 +1779,78 @@
       });
     });
 
+    // Edit Profile modal wiring + localStorage persistence
+    const editProfileBtnEl = getEl("editProfileBtn");
+    if (editProfileBtnEl && !editProfileBtnEl.dataset.bound) {
+      editProfileBtnEl.dataset.bound = "1";
+      editProfileBtnEl.addEventListener("click", function () {
+        // Load persisted profile data for prefill
+        let persisted = null;
+        try {
+          persisted = window.localStorage.getItem("prism_profile_data");
+        } catch (e) {
+          persisted = null;
+        }
+
+        let payload = {
+          username: (state.currentUser && state.currentUser.username) ? state.currentUser.username : (getEl("profile-username") ? getEl("profile-username").textContent : ""),
+          handle: (getEl("profile-handle") ? getEl("profile-handle").textContent : ""),
+          bio: (getEl("profile-bio") ? getEl("profile-bio").textContent : "")
+        };
+
+        if (persisted) {
+          try {
+            const parsed = JSON.parse(persisted);
+            if (parsed) {
+              if (parsed.username) payload.username = parsed.username;
+              if (parsed.handle) payload.handle = parsed.handle;
+              if (parsed.bio) payload.bio = parsed.bio;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        // Ensure handle includes @ in UI prefill
+        if (payload.handle && !String(payload.handle).startsWith("@")) {
+          payload.handle = "@" + payload.handle;
+        }
+
+        showEditProfileModal(payload);
+      });
+    }
+
+    // Initialize persisted profile data on load
+    (function initPersistedProfile() {
+      try {
+        const stored = window.localStorage.getItem("prism_profile_data");
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        if (!parsed) return;
+
+        const uEl = getEl("profile-username");
+        const hEl = getEl("profile-handle");
+        const bEl = getEl("profile-bio");
+        if (uEl && parsed.username) uEl.textContent = parsed.username;
+        if (hEl && parsed.handle) hEl.textContent = parsed.handle.startsWith("@") ? parsed.handle : "@" + parsed.handle;
+        if (bEl && parsed.bio) bEl.textContent = parsed.bio;
+
+        const aEl = getEl("profile-avatar");
+        const lsAvatar = window.localStorage.getItem("prism_profile_avatar_dataurl");
+        if (aEl && lsAvatar) {
+          aEl.style.backgroundImage = "url('" + lsAvatar + "')";
+          aEl.style.backgroundSize = "cover";
+          aEl.style.backgroundPosition = "center";
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+
     // Default to Home
     showView("view-home");
     setActiveNav("home");
+
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && uploadModal && !uploadModal.hidden) {

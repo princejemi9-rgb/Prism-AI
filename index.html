@@ -151,27 +151,32 @@
 
     <div class="view" id="view-profile" hidden>
       <div class="profile-hero">
-        <div class="profile-avatar" aria-hidden="true"></div>
+        <div class="profile-avatar" id="profile-avatar" aria-hidden="true"></div>
         <div class="profile-meta">
           <div class="profile-username" id="profile-username">Prince_AI</div>
           <div class="profile-handle" id="profile-handle">@prince_tega_jemi</div>
+        </div>
+
+        <div class="profile-cta">
+          <button type="button" id="editProfileBtn" class="profile-edit-btn">Edit Profile</button>
         </div>
       </div>
 
       <div class="profile-stats">
         <div class="stat">
-          <div class="stat-num" id="profile-following">128</div>
+          <div class="stat-num" id="profile-following">0</div>
           <div class="stat-label">Following</div>
         </div>
         <div class="stat">
-          <div class="stat-num" id="profile-followers">2.4K</div>
+          <div class="stat-num" id="profile-followers">0</div>
           <div class="stat-label">Followers</div>
         </div>
         <div class="stat">
-          <div class="stat-num" id="profile-likes">18.2K</div>
+          <div class="stat-num" id="profile-likes">0</div>
           <div class="stat-label">Likes</div>
         </div>
       </div>
+
 
       <div class="profile-bio">
         <p id="profile-bio">
@@ -238,6 +243,45 @@
         </form>
       </div>
     </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div class="modal-backdrop" id="editProfileModal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editProfileModalTitle">
+        <div class="modal-header">
+          <h2 id="editProfileModalTitle">Edit profile</h2>
+          <button type="button" class="modal-close" id="editProfileCloseBtn" aria-label="Close edit profile modal">×</button>
+        </div>
+
+        <div class="edit-profile-avatar-row">
+          <div class="edit-profile-avatar-wrap">
+            <div class="edit-profile-avatar" id="editProfileAvatarPreview" aria-hidden="true"></div>
+          </div>
+
+          <div class="edit-profile-avatar-actions">
+            <label class="avatar-change-btn" for="editProfileAvatarInput">Change avatar</label>
+            <input id="editProfileAvatarInput" type="file" accept="image/*" hidden />
+            <small class="edit-profile-avatar-help">Local-only (no upload yet)</small>
+          </div>
+        </div>
+
+        <form id="editProfileForm">
+          <label for="editProfileUsername">Username</label>
+          <input id="editProfileUsername" name="username" type="text" required />
+
+          <label for="editProfileHandle">Handle</label>
+          <input id="editProfileHandle" name="handle" type="text" required />
+
+          <label for="editProfileBio">Bio</label>
+          <textarea id="editProfileBio" name="bio" rows="3" required></textarea>
+
+          <div class="modal-actions">
+            <button type="submit" id="editProfileSaveBtn">Save</button>
+            <button type="button" id="editProfileCancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <!-- UPLOAD MODAL (keep existing IDs; app.js expects these) -->
     <div class="modal-backdrop" id="uploadModal" hidden>
