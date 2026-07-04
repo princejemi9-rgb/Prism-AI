@@ -819,12 +819,21 @@
       item.dataset.title = video.title;
       item.dataset.url = video.url;
 
-      const iframe = document.createElement("iframe");
-      iframe.className = "grid-video";
-      iframe.src = normalizeVideoUrl(video.url);
-      iframe.title = video.title || ("Prism AI video " + (idx + 1));
-      iframe.allow = "autoplay; encrypted-media; picture-in-picture";
-      iframe.loading = "lazy";
+      // Thumbnail-only: do NOT render iframe/video inside grid.
+      // Clicking a thumbnail opens the full-screen TikTok/Reels viewer.
+      const thumb = document.createElement("div");
+      thumb.className = "grid-thumb";
+
+      const overlayPlay = document.createElement("div");
+      overlayPlay.className = "grid-thumb-play";
+      overlayPlay.textContent = "▶";
+
+      const thumbMeta = document.createElement("div");
+      thumbMeta.className = "grid-thumb-meta";
+      thumbMeta.textContent = video.title ? String(video.title).slice(0, 18) : "";
+
+      thumb.appendChild(overlayPlay);
+      thumb.appendChild(thumbMeta);
 
       const menu = document.createElement("button");
       menu.type = "button";
@@ -852,7 +861,7 @@
         menu.style.display = "flex";
       }
 
-      item.appendChild(iframe);
+      item.appendChild(thumb);
       item.appendChild(menu);
       grid.appendChild(item);
     });
