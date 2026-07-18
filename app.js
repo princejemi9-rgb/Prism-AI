@@ -519,6 +519,29 @@
     const tabButtons = document.querySelectorAll(".tab-btn");
     if (!tabButtons.length) return;
 
+    function updateUploadFieldRequirements(activeTabName) {
+      const phoneFields = [
+        uploadForm.querySelector("[name=title]"),
+        uploadForm.querySelector("[name=creator]"),
+        uploadForm.querySelector("[name=video_file]")
+      ];
+      const youtubeFields = [
+        uploadForm.querySelector("[name=title2]"),
+        uploadForm.querySelector("[name=creator2]"),
+        uploadForm.querySelector("[name=video_url]")
+      ];
+
+      phoneFields.forEach(function (field) {
+        if (field) field.required = activeTabName === "phone";
+      });
+      youtubeFields.forEach(function (field) {
+        if (field) field.required = activeTabName === "youtube";
+      });
+    }
+
+    const initialTab = document.querySelector(".tab-btn.active");
+    updateUploadFieldRequirements(initialTab ? initialTab.getAttribute("data-tab") : "phone");
+
     tabButtons.forEach(function (btn) {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
@@ -538,6 +561,7 @@
         if (tabContent) {
           tabContent.classList.add("active");
           btn.classList.add("active");
+          updateUploadFieldRequirements(tabName);
 
           // Clear form fields when switching tabs
           if (tabName === "phone") {
@@ -710,12 +734,23 @@
     const container = document.createElement("div");
     container.className = "video-container";
 
-    const iframe = document.createElement("iframe");
-    iframe.src = normalizeVideoUrl(video.url);
-    iframe.title = video.title || "Prism AI video";
-    iframe.allow = "autoplay; encrypted-media; picture-in-picture";
-    iframe.setAttribute("allowfullscreen", "allowfullscreen");
-    iframe.loading = "lazy";
+    let media;
+    if (isDirectStorageOrMediaUrl(video.url)) {
+      media = document.createElement("video");
+      media.src = video.url;
+      media.muted = true;
+      media.playsInline = true;
+      media.preload = "metadata";
+      media.loop = true;
+      media.setAttribute("webkit-playsinline", "true");
+    } else {
+      media = document.createElement("iframe");
+      media.src = normalizeVideoUrl(video.url);
+      media.title = video.title || "Prism AI video";
+      media.allow = "autoplay; encrypted-media; picture-in-picture";
+      media.setAttribute("allowfullscreen", "allowfullscreen");
+      media.loading = "lazy";
+    }
 
     const overlay = document.createElement("div");
     overlay.className = "overlay";
@@ -738,7 +773,7 @@
     tipButton.addEventListener("click", tip);
 
     actions.appendChild(tipButton);
-    container.appendChild(iframe);
+    container.appendChild(media);
     container.appendChild(overlay);
     container.appendChild(actions);
 
@@ -791,15 +826,24 @@
 
       entries.forEach(function (entry) {
         const iframe = entry.target.querySelector("iframe");
-        if (!iframe) return;
+        const videoEl = entry.target.querySelector("video");
+        if (!iframe && !videoEl) return;
 
         if (entry.target === mostVisible.target && mostVisible.intersectionRatio >= 0.6) {
           if (state.activeVideoContainer !== entry.target) {
-            playIframe(iframe);
+            if (iframe) {
+              playIframe(iframe);
+            } else if (videoEl) {
+              const playResult = videoEl.play();
+              if (playResult && typeof playResult.catch === "function") {
+                playResult.catch(function () {});
+              }
+            }
             state.activeVideoContainer = entry.target;
           }
         } else {
-          pauseIframe(iframe);
+          if (iframe) pauseIframe(iframe);
+          if (videoEl) videoEl.pause();
           if (state.activeVideoContainer === entry.target) {
             state.activeVideoContainer = null;
           }
@@ -920,9 +964,12 @@
       return p.creator === username;
     }) : posts;
 
-    const list = (filtered && filtered.length ? filtered : posts).slice(0, 12);
+    const list = (username ? filtered : posts).slice(0, 12);
 
-    if (!list.length) return;
+    if (!list.length) {
+      if (empty) empty.textContent = username ? "You have not uploaded any videos yet." : "No videos yet.";
+      return;
+    }
 
     if (empty) empty.hidden = true;
 
@@ -1873,4 +1920,3 @@
     startApp();
   }
 })();
-

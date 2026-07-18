@@ -78,9 +78,31 @@
       style="display: none; white-space: pre-wrap; background: #7f1d1d; color: #ffffff; padding: 10px; font: 13px/1.4 Arial, sans-serif; max-height: 160px; overflow: auto;"
     ></div>
 
+    <!-- LOGIN REQUIRED MODAL -->
+    <div class="modal-backdrop" id="loginRequiredModal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginRequiredTitle">
+        <div class="modal-header">
+          <div class="login-required-header">
+            <div class="login-required-avatar" aria-hidden="true">✨</div>
+            <div>
+              <h2 id="loginRequiredTitle">Log in to continue</h2>
+              <p id="loginRequiredSubtitle" class="login-required-subtitle">
+                Use Pi Login to upload videos, view your profile, check inbox, and interact with creators.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="modal-close" id="loginRequiredCloseBtn" aria-label="Close login modal">×</button>
+        </div>
+
+        <div class="modal-actions login-required-actions">
+          <button type="button" id="loginRequiredPrimaryBtn">Continue with Pi</button>
+          <button type="button" id="loginRequiredSecondaryBtn" class="login-required-secondary">Not now</button>
+        </div>
+      </div>
+    </div>
+
     <!-- VIEWS -->
     <div class="view" id="view-home">
-      <!-- FEED (keep existing logic) -->
       <div class="feed" id="feed"></div>
     </div>
 
@@ -177,11 +199,8 @@
         </div>
       </div>
 
-
       <div class="profile-bio">
-        <p id="profile-bio">
-          Building AI tools that help you work smarter, learn fast, and earn from your creativity.
-        </p>
+        <p id="profile-bio">Building AI tools that help you work smarter, learn fast, and earn from your creativity.</p>
       </div>
 
       <div class="section" style="margin-top: 14px;">
@@ -227,7 +246,6 @@
 
     <!-- EDIT CAPTION MODAL -->
     <div class="modal-backdrop" id="editPostModal" hidden>
-
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editPostModalTitle">
         <div class="modal-header">
           <h2 id="editPostModalTitle">Edit post</h2>
@@ -282,10 +300,8 @@
       </div>
     </div>
 
-
-    <!-- UPLOAD MODAL (keep existing IDs; app.js expects these) -->
+    <!-- UPLOAD MODAL -->
     <div class="modal-backdrop" id="uploadModal" hidden>
-
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
         <div class="modal-header">
           <h2 id="uploadModalTitle">Create Post</h2>
